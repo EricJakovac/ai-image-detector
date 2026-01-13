@@ -1,3 +1,24 @@
+# Venv
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Data i veliki fajlovi
+data/
+data_mini/
+*.zip
+*.pth
+*.pt
+*.h5
+models/*.pth
+models/*.pt
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
