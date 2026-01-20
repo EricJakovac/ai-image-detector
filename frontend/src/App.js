@@ -12,6 +12,8 @@ function App() {
     setResults([]);  // Reset results
   };
 
+  const REACT_APP_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
   const handlePredict = async () => {
     if (images.length === 0) return;
 
@@ -23,7 +25,7 @@ function App() {
 
     try {
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/v1/batch-predict-cam',  // 🎯 Grad-CAM endpoint
+        `${REACT_APP_API_URL}/api/v1/batch-predict-cam`,  // 🎯 Grad-CAM endpoint
         formData,
         { 
           headers: { 'Content-Type': 'multipart/form-data' },

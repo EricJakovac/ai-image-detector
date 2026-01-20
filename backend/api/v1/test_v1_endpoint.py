@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.models.efficientnet_test import EfficientNetTest
+from models.efficientnet_test import EfficientNetTest
 import torch
 
 router = APIRouter()

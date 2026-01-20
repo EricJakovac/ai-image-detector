@@ -1,24 +1,33 @@
-# Venv
+# Venv i Python
 .venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+venv/
+__pycache__/
+*.pyc
 
-# Data i veliki fajlovi
+# DATA I VELIKI FAJLOVI - Dodaj svoj folder sa slikama ovdje!
+ai_vs_real_84k_train_data/
 data/
 data_mini/
 *.zip
+*.tar.gz
+
+# AI Modeli (Weights)
 *.pth
 *.pt
 *.h5
 models/*.pth
 models/*.pt
 
-# Logs
+# Logs i OS
 *.log
 logs/
-
-# OS
 .DS_Store
 Thumbs.db
+
+# Docker
+.docker/
+
+# .env
+**/.env
