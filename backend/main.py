@@ -28,17 +28,15 @@ IS_HF_SPACES = os.environ.get("SPACE_ID") is not None or "hf.space" in os.enviro
     "HOSTNAME", ""
 )
 
-# MODEL REPO - PRODUKCIJA KORISTI HF HUB, LOKALNO KORISTI LOKALNE
-if IS_HF_SPACES:
-    # Na HF Spaces: koristi modele iz HF Hub-a
-    REPO_ID = "EricJakovac/ai-image-detector-models"  # Tvoj model repo na HF Hubu
-    print("🚀 RUNNING ON HF SPACES - Using HF Hub models")
-else:
-    # Lokalno: koristi environment varijable ili fallback
-    REPO_ID = os.getenv("REPO_ID", "EricJakovac/ai-image-detector-models")
-    print("💻 RUNNING LOCALLY - Checking for local models first")
-
+REPO_ID = os.getenv("REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
+
+if not REPO_ID:
+    raise RuntimeError(
+        "❌ REPO_ID environment variable is not set. "
+        "Set it in HF Spaces Variables or your local .env file."
+    )
+
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # Automatsko prebacivanje na GPU ako je dostupan, inače CPU
