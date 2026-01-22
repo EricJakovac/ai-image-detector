@@ -450,6 +450,28 @@ async def batch_predict(files: list[UploadFile] = File(...)):
     }
 
 
+@app.get("/")
+async def root():
+    """Root endpoint - za Hugging Face Spaces health check."""
+    return {
+        "status": "online",
+        "service": "AI Image Detector API",
+        "version": "1.0.0",
+        "endpoints": {
+            "predict": "/predict-dual (POST)",
+            "progress": "/progress/{request_id} (GET)",
+            "batch": "/batch-predict (POST)",
+        },
+        "models_loaded": {
+            "cnn": cnn_model is not None,
+            "vit": vit_model is not None,
+            "gradcam": gradcam_gen is not None,
+            "vit_attention": vit_attention_gen is not None,
+        },
+        "device": str(device),
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
 
