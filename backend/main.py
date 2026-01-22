@@ -48,26 +48,30 @@ app.add_middleware(
 
 # --- POMOĆNE FUNKCIJE ---
 def get_model_path(folder_name: str, filename: str) -> str:
-    """Dohvati putanju do modela, preuzmi ako ne postoji lokalno."""
-    local_dir = os.path.join("models", folder_name)
-    os.makedirs(local_dir, exist_ok=True)
-    local_path = os.path.join(local_dir, filename)
+    """Pametno dohvaćanje modela - prednost lokalnim datotekama."""
+    # Putanja unutar tvog projekta
+    local_path = os.path.join("models", folder_name, filename)
 
-    if not os.path.exists(local_path):
-        print(f"📥 Downloading model: {folder_name}/{filename}")
-        try:
-            path = hf_hub_download(
-                repo_id=REPO_ID,
-                filename=f"{folder_name}/{filename}",
-                token=HF_TOKEN,
-                local_dir=local_dir,
-                local_dir_use_symlinks=False,
-            )
-            return path
-        except Exception as e:
-            print(f"❌ Download error: {e}")
-            raise
-    return local_path
+    # Ako datoteka postoji lokalno, provjeri je li to pravi model ili LFS pointer
+    if os.path.exists(local_path):
+        # Ako je datoteka manja od 1KB, vjerojatno je LFS pointer (tekst), a ne model
+        if os.path.getsize(local_path) > 1000:
+            print(f"✅ Using local model: {local_path}")
+            return local_path
+
+    # Ako lokalna ne postoji ili je sumnjivo mala, koristi hf_hub_download
+    print(f"📥 Fetching model from HF Hub: {folder_name}/{filename}")
+    try:
+        path = hf_hub_download(
+            repo_id=REPO_ID, filename=f"{folder_name}/{filename}", token=HF_TOKEN
+        )
+        return path
+    except Exception as e:
+        print(f"❌ Error fetching model: {e}")
+        # Ako download ne uspije, a imamo ikakvu lokalnu datoteku, pokušaj bar s njom
+        if os.path.exists(local_path):
+            return local_path
+        raise
 
 
 def get_cache_key(file_contents: bytes, model_name: str) -> str:
