@@ -89,7 +89,7 @@ try:
     # CNN model
     cnn_path = get_model_path("cnn_efficientnet", "model.pth")
     cnn_model = EfficientNetTest(num_classes=2)
-    cnn_sd = torch.load(cnn_path, map_location=device, weights_only=True)
+    cnn_sd = torch.load(cnn_path, map_location=device, weights_only=False)
     cnn_model.load_state_dict(
         cnn_sd["model_state_dict"] if "model_state_dict" in cnn_sd else cnn_sd
     )
@@ -100,7 +100,7 @@ try:
     # ViT model
     vit_path = get_model_path("vit_transformer", "model.pth")
     vit_model = ViTTest(num_classes=2)
-    vit_sd = torch.load(vit_path, map_location=device, weights_only=True)
+    vit_sd = torch.load(vit_path, map_location=device, weights_only=False)
 
     if "model_state_dict" in vit_sd:
         vit_sd = vit_sd["model_state_dict"]
