@@ -1,3 +1,13 @@
+---
+title: AI Image Detector API
+emoji: 🛡️
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🤖 AI Image Detector
 
 Ovaj projekt koristi duboko učenje (Deep Learning) za detekciju slika generiranih umjetnom inteligencijom. 
