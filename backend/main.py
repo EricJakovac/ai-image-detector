@@ -67,52 +67,45 @@ app.add_middleware(
 
 # --- POMOĆNE FUNKCIJE (Ažurirane) ---
 def get_model_path_optimized(folder_name: str, filename: str) -> str:
-    """
-    Optimized model loader:
-    - Na HF Spaces: koristi HF Hub sa persistent cache
-    - Lokalno: prvo provjeri lokalne modele, pa HF Hub kao fallback
-    """
+    # Definiramo putanju unutar HF cache-a koja preživljava većinu restarta
+    # Na HF Spaces, /home/user/.cache je obično postojaniji od samog /app foldera
+    hf_cache_path = (
+        "/home/user/.cache/huggingface/hub" if IS_HF_SPACES else "./model_cache"
+    )
+
     local_path = os.path.join("models", folder_name, filename)
 
-    # PROVJERA 1: Ako smo lokalno i imamo pravi model (>1MB), koristi ga
-    if not IS_HF_SPACES and os.path.exists(local_path):
-        file_size = os.path.getsize(local_path)
-        if file_size > 1000000:  # >1MB = realan model
-            print(f"💾 Using LOCAL model ({file_size/(1024*1024):.1f}MB): {local_path}")
-            return local_path
+    # 1. Provjera: Ako datoteka već postoji u našem lokalnom folderu i ispravna je (>1MB)
+    if os.path.exists(local_path) and os.path.getsize(local_path) > 1000000:
+        print(f"✔️ Using existing model from local folder: {local_path}")
+        return local_path
 
-    # PROVJERA 2: Na HF Spaces koristi persistent cache
-    print(f"📥 Fetching model: {folder_name}/{filename}")
+    # 2. Provjera: hf_hub_download po defaultu već ima ugrađen sustav koji NE skida
+    # datoteku ako je već u cache-u i ista je kao na Hub-u.
+    print(f"🔍 Checking/Fetching model: {folder_name}/{filename}")
 
     try:
-        # Na HF Spaces koristi cache_dir koji traje između restartova
-        cache_dir = "/home/user/.cache/huggingface/hub" if IS_HF_SPACES else None
-
         path = hf_hub_download(
             repo_id=REPO_ID,
             filename=f"{folder_name}/{filename}",
             token=HF_TOKEN,
-            cache_dir=cache_dir,
-            local_files_only=False,  # Uvijek provjeri ima li novije
+            cache_dir=hf_cache_path,
+            local_files_only=False,  # On će sam provjeriti ETag (hash) i skinuti samo ako ima promjena
         )
-
-        # Logging
-        if IS_HF_SPACES:
-            print(f"✅ HF Spaces: Model cached at {path}")
-        else:
-            print(f"✅ Local: Downloaded model from HF Hub")
-
+        print(f"✅ Model path ready: {path}")
         return path
-
     except Exception as e:
-        print(f"❌ HF Hub download failed: {e}")
-
-        # FALLBACK: Ako je lokalni fajl dostupan (čak i ako je LFS pointer)
-        if os.path.exists(local_path):
-            print(f"⚠️  Falling back to local file: {local_path}")
-            return local_path
-
-        raise Exception(f"Could not load model {folder_name}/{filename}: {e}")
+        # Ako nema interneta, a imamo nešto u cache-u, pokušaj bar to
+        try:
+            return hf_hub_download(
+                repo_id=REPO_ID,
+                filename=f"{folder_name}/{filename}",
+                cache_dir=hf_cache_path,
+                local_files_only=True,
+            )
+        except:
+            print(f"❌ CRITICAL: Model not found in cache or hub: {e}")
+            raise e
 
 
 def get_cache_key(file_contents: bytes, model_name: str) -> str:
