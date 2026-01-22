@@ -23,9 +23,24 @@ app = FastAPI(title="AI Image Detector Backend", version="1.0.0")
 load_dotenv()
 
 # --- GLOBALNE VARIJABLE ---
-REPO_ID = os.getenv("REPO_ID")
+# AUTO-DETECT: JESMO LI NA HF SPACES ILI LOKALNO?
+IS_HF_SPACES = os.environ.get("SPACE_ID") is not None or "hf.space" in os.environ.get(
+    "HOSTNAME", ""
+)
+
+# MODEL REPO - PRODUKCIJA KORISTI HF HUB, LOKALNO KORISTI LOKALNE
+if IS_HF_SPACES:
+    # Na HF Spaces: koristi modele iz HF Hub-a
+    REPO_ID = "EricJakovac/ai-image-detector-models"  # Tvoj model repo na HF Hubu
+    print("🚀 RUNNING ON HF SPACES - Using HF Hub models")
+else:
+    # Lokalno: koristi environment varijable ili fallback
+    REPO_ID = os.getenv("REPO_ID", "EricJakovac/ai-image-detector-models")
+    print("💻 RUNNING LOCALLY - Checking for local models first")
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Automatsko prebacivanje na GPU ako je dostupan, inače CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 executor = ThreadPoolExecutor(max_workers=2)
@@ -33,45 +48,71 @@ processing_status: Dict[str, dict] = {}
 prediction_cache: Dict[str, dict] = {}
 
 # --- CORS KONFIGURACIJA ---
-# Dodane produkcijske i lokalne adrese za nesmetan rad
+# Podesi različito za produkciju i development
+if IS_HF_SPACES:
+    # Na HF Spaces: dopusti sve ili specifične domene
+    allow_origins = ["*"]  # Ili: ["https://*.hf.space", FRONTEND_URL]
+else:
+    # Lokalno: samo frontend i localhost
+    allow_origins = [FRONTEND_URL, "http://localhost:3000"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        FRONTEND_URL,
-        "http://localhost:3000",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# --- POMOĆNE FUNKCIJE ---
-def get_model_path(folder_name: str, filename: str) -> str:
-    """Pametno dohvaćanje modela - prednost lokalnim datotekama."""
-    # Putanja unutar tvog projekta
+# --- POMOĆNE FUNKCIJE (Ažurirane) ---
+def get_model_path_optimized(folder_name: str, filename: str) -> str:
+    """
+    Optimized model loader:
+    - Na HF Spaces: koristi HF Hub sa persistent cache
+    - Lokalno: prvo provjeri lokalne modele, pa HF Hub kao fallback
+    """
     local_path = os.path.join("models", folder_name, filename)
 
-    # Ako datoteka postoji lokalno, provjeri je li to pravi model ili LFS pointer
-    if os.path.exists(local_path):
-        # Ako je datoteka manja od 1KB, vjerojatno je LFS pointer (tekst), a ne model
-        if os.path.getsize(local_path) > 1000:
-            print(f"✅ Using local model: {local_path}")
+    # PROVJERA 1: Ako smo lokalno i imamo pravi model (>1MB), koristi ga
+    if not IS_HF_SPACES and os.path.exists(local_path):
+        file_size = os.path.getsize(local_path)
+        if file_size > 1000000:  # >1MB = realan model
+            print(f"💾 Using LOCAL model ({file_size/(1024*1024):.1f}MB): {local_path}")
             return local_path
 
-    # Ako lokalna ne postoji ili je sumnjivo mala, koristi hf_hub_download
-    print(f"📥 Fetching model from HF Hub: {folder_name}/{filename}")
+    # PROVJERA 2: Na HF Spaces koristi persistent cache
+    print(f"📥 Fetching model: {folder_name}/{filename}")
+
     try:
+        # Na HF Spaces koristi cache_dir koji traje između restartova
+        cache_dir = "/home/user/.cache/huggingface/hub" if IS_HF_SPACES else None
+
         path = hf_hub_download(
-            repo_id=REPO_ID, filename=f"{folder_name}/{filename}", token=HF_TOKEN
+            repo_id=REPO_ID,
+            filename=f"{folder_name}/{filename}",
+            token=HF_TOKEN,
+            cache_dir=cache_dir,
+            local_files_only=False,  # Uvijek provjeri ima li novije
         )
+
+        # Logging
+        if IS_HF_SPACES:
+            print(f"✅ HF Spaces: Model cached at {path}")
+        else:
+            print(f"✅ Local: Downloaded model from HF Hub")
+
         return path
+
     except Exception as e:
-        print(f"❌ Error fetching model: {e}")
-        # Ako download ne uspije, a imamo ikakvu lokalnu datoteku, pokušaj bar s njom
+        print(f"❌ HF Hub download failed: {e}")
+
+        # FALLBACK: Ako je lokalni fajl dostupan (čak i ako je LFS pointer)
         if os.path.exists(local_path):
+            print(f"⚠️  Falling back to local file: {local_path}")
             return local_path
-        raise
+
+        raise Exception(f"Could not load model {folder_name}/{filename}: {e}")
 
 
 def get_cache_key(file_contents: bytes, model_name: str) -> str:
@@ -80,8 +121,9 @@ def get_cache_key(file_contents: bytes, model_name: str) -> str:
     return f"{model_name}_{file_hash}"
 
 
-# --- INICIJALIZACIJA MODELA ---
+# --- INICIJALIZACIJA MODELA (Optimized) ---
 print(f"🔄 Initializing AI models on device: {device}...")
+print(f"📊 Environment: {'HF Spaces' if IS_HF_SPACES else 'Local Development'}")
 
 # CNN (EfficientNet) model
 cnn_model = None
@@ -90,8 +132,8 @@ gradcam_gen = None
 vit_attention_gen = None
 
 try:
-    # CNN model
-    cnn_path = get_model_path("cnn_efficientnet", "model.pth")
+    # CNN model - koristi optimizirani loader
+    cnn_path = get_model_path_optimized("cnn_efficientnet", "model.pth")
     cnn_model = EfficientNetTest(num_classes=2)
     cnn_sd = torch.load(cnn_path, map_location=device, weights_only=False)
     cnn_model.load_state_dict(
@@ -101,8 +143,8 @@ try:
     cnn_model.eval()
     print("✅ CNN model loaded")
 
-    # ViT model
-    vit_path = get_model_path("vit_transformer", "model.pth")
+    # ViT model - koristi optimizirani loader
+    vit_path = get_model_path_optimized("vit_transformer", "model.pth")
     vit_model = ViTTest(num_classes=2)
     vit_sd = torch.load(vit_path, map_location=device, weights_only=False)
 
@@ -131,7 +173,7 @@ try:
         print(f"⚠️ Could not initialize ViT Attention: {e}")
         vit_attention_gen = None
 
-    print("✅ Visualization generators ready")
+    print("✅ All models initialized successfully")
 
 except Exception as e:
     print(f"❌ Model initialization error: {e}")
@@ -139,6 +181,9 @@ except Exception as e:
 
     traceback.print_exc()
     raise
+
+# --- Ostali dijelovi koda ostaju ISTI ---
+# (transform, validate_image, async funkcije, endpointi...)
 
 # Transformacija slike
 transform = transforms.Compose(
@@ -240,6 +285,42 @@ async def process_vit_attention(pil_image: Image.Image) -> str:
     except Exception as e:
         print(f"ViT attention error: {e}")
         return None
+
+
+# --- ENDPOINTI (dodaj debug endpoint) ---
+@app.get("/debug/environment")
+async def debug_environment():
+    """Debug endpoint za provjeru okoline i modela."""
+    local_cnn = os.path.join("models", "cnn_efficientnet", "model.pth")
+    local_vit = os.path.join("models", "vit_transformer", "model.pth")
+
+    return {
+        "environment": {
+            "is_hf_spaces": IS_HF_SPACES,
+            "space_id": os.environ.get("SPACE_ID"),
+            "hostname": os.environ.get("HOSTNAME"),
+            "repo_id": REPO_ID,
+            "device": str(device),
+        },
+        "local_files": {
+            "cnn_exists": os.path.exists(local_cnn),
+            "cnn_size_mb": (
+                os.path.getsize(local_cnn) / (1024 * 1024)
+                if os.path.exists(local_cnn)
+                else 0
+            ),
+            "vit_exists": os.path.exists(local_vit),
+            "vit_size_mb": (
+                os.path.getsize(local_vit) / (1024 * 1024)
+                if os.path.exists(local_vit)
+                else 0
+            ),
+        },
+        "models_loaded": {
+            "cnn": cnn_model is not None,
+            "vit": vit_model is not None,
+        },
+    }
 
 
 @app.get("/progress/{request_id}")
@@ -457,10 +538,12 @@ async def root():
         "status": "online",
         "service": "AI Image Detector API",
         "version": "1.0.0",
+        "environment": "HF Spaces" if IS_HF_SPACES else "Local",
         "endpoints": {
             "predict": "/predict-dual (POST)",
             "progress": "/progress/{request_id} (GET)",
             "batch": "/batch-predict (POST)",
+            "debug": "/debug/environment (GET)",
         },
         "models_loaded": {
             "cnn": cnn_model is not None,
