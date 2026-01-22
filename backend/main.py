@@ -26,15 +26,20 @@ load_dotenv()
 REPO_ID = os.getenv("REPO_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-device = torch.device("cpu")
+# Automatsko prebacivanje na GPU ako je dostupan, inače CPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 executor = ThreadPoolExecutor(max_workers=2)
 processing_status: Dict[str, dict] = {}
 prediction_cache: Dict[str, dict] = {}
 
 # --- CORS KONFIGURACIJA ---
+# Dodane produkcijske i lokalne adrese za nesmetan rad
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=[
+        FRONTEND_URL,
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,7 +77,7 @@ def get_cache_key(file_contents: bytes, model_name: str) -> str:
 
 
 # --- INICIJALIZACIJA MODELA ---
-print("🔄 Initializing AI models...")
+print(f"🔄 Initializing AI models on device: {device}...")
 
 # CNN (EfficientNet) model
 cnn_model = None
@@ -88,6 +93,7 @@ try:
     cnn_model.load_state_dict(
         cnn_sd["model_state_dict"] if "model_state_dict" in cnn_sd else cnn_sd
     )
+    cnn_model.to(device)
     cnn_model.eval()
     print("✅ CNN model loaded")
 
@@ -106,6 +112,7 @@ try:
         vit_sd = {"backbone." + k: v for k, v in vit_sd.items()}
 
     vit_model.load_state_dict(vit_sd)
+    vit_model.to(device)
     vit_model.eval()
     print("✅ ViT model loaded")
 
@@ -121,9 +128,6 @@ try:
         vit_attention_gen = None
 
     print("✅ Visualization generators ready")
-    print(
-        f"ViT model blocks: {len(inner_model.blocks) if hasattr(inner_model, 'blocks') else 'N/A'}"
-    )
 
 except Exception as e:
     print(f"❌ Model initialization error: {e}")
@@ -162,7 +166,9 @@ async def process_cnn_prediction(input_tensor: torch.Tensor) -> dict:
     """Async obrada CNN predikcije."""
     loop = asyncio.get_event_loop()
     with torch.no_grad():
-        cnn_out = await loop.run_in_executor(executor, lambda: cnn_model(input_tensor))
+        cnn_out = await loop.run_in_executor(
+            executor, lambda: cnn_model(input_tensor.to(device))
+        )
         cnn_probs = torch.nn.functional.softmax(cnn_out, dim=1)[0]
         cnn_conf, cnn_class = torch.max(cnn_probs, dim=0)
 
@@ -171,7 +177,7 @@ async def process_cnn_prediction(input_tensor: torch.Tensor) -> dict:
             "probs": cnn_probs,
             "confidence": cnn_conf.item(),
             "class_idx": cnn_class.item(),
-            "probabilities": cnn_probs.tolist(),
+            "probabilities": cnn_probs.cpu().tolist(),
         }
 
 
@@ -181,7 +187,7 @@ async def process_vit_prediction(input_tensor: torch.Tensor) -> dict:
     with torch.no_grad():
         try:
             vit_out = await loop.run_in_executor(
-                executor, lambda: vit_model(input_tensor)
+                executor, lambda: vit_model(input_tensor.to(device))
             )
             vit_probs = torch.nn.functional.softmax(vit_out, dim=1)[0]
             vit_conf, vit_class = torch.max(vit_probs, dim=0)
@@ -191,7 +197,7 @@ async def process_vit_prediction(input_tensor: torch.Tensor) -> dict:
                 "probs": vit_probs,
                 "confidence": vit_conf.item(),
                 "class_idx": vit_class.item(),
-                "probabilities": vit_probs.tolist(),
+                "probabilities": vit_probs.cpu().tolist(),
                 "error": None,
             }
         except Exception as e:
@@ -270,11 +276,6 @@ async def predict_dual(
         file_ext = validate_image(file)
         contents = await file.read()
 
-        if len(contents) > MAX_FILE_SIZE:
-            raise HTTPException(
-                413, f"File too large. Max {MAX_FILE_SIZE//1024//1024}MB"
-            )
-
         # Provjeri cache
         cache_key = get_cache_key(contents, "full_prediction")
         if cache_key in prediction_cache:
@@ -287,15 +288,7 @@ async def predict_dual(
             {"progress": 20, "message": "Processing image..."}
         )
 
-        # Otvaranje i validacija slike
-        try:
-            pil_image = Image.open(io.BytesIO(contents))
-            pil_image.verify()
-            pil_image = Image.open(io.BytesIO(contents))
-        except Exception as e:
-            raise HTTPException(400, f"Invalid image file: {str(e)}")
-
-        pil_image = pil_image.convert("RGB")
+        pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
         original_size = pil_image.size
 
         # Faza 2: Preprocesiranje
@@ -309,13 +302,11 @@ async def predict_dual(
         processing_status[request_id].update(
             {"progress": 40, "message": "Running CNN prediction..."}
         )
-
         cnn_task = asyncio.create_task(process_cnn_prediction(input_tensor))
 
         processing_status[request_id].update(
             {"progress": 50, "message": "Running ViT prediction..."}
         )
-
         vit_task = asyncio.create_task(process_vit_prediction(input_tensor))
 
         # Čekaj obje predikcije
@@ -349,13 +340,11 @@ async def predict_dual(
             "processing_time": round(
                 time.time() - processing_status[request_id]["start_time"], 2
             ),
-            # --- ISPRAVAK U main.py ---
             "cnn": {
                 "label": labels[cnn_result["class_idx"]],
                 "probability": round(cnn_result["confidence"], 4),
                 "confidence_percent": round(cnn_result["confidence"] * 100, 1),
                 "raw_probabilities": {
-                    # Budući da je 0=AI a 1=Real:
                     "ai": round(cnn_result["probabilities"][0], 4),
                     "real": round(cnn_result["probabilities"][1], 4),
                 },
@@ -378,7 +367,6 @@ async def predict_dual(
                     else 0.0
                 ),
                 "raw_probabilities": {
-                    # Budući da je 0=AI a 1=Real:
                     "ai": (
                         round(vit_result["probabilities"][0], 4)
                         if vit_result["error"] is None
@@ -407,12 +395,6 @@ async def predict_dual(
                     abs(cnn_result["confidence"] - vit_result["confidence"]) * 100, 1
                 ),
             }
-        else:
-            result["comparison"] = {
-                "models_agree": False,
-                "agreement": "ViT model failed",
-                "confidence_difference": None,
-            }
 
         # Spremi u cache
         prediction_cache[cache_key] = result
@@ -424,43 +406,21 @@ async def predict_dual(
 
         # Finalni status
         processing_status[request_id].update(
-            {
-                "status": "complete",
-                "progress": 100,
-                "message": "Analysis complete",
-                "processing_time": result["processing_time"],
-            }
+            {"status": "complete", "progress": 100, "message": "Analysis complete"}
         )
 
-        # Zakazivanje čišćenja
         if background_tasks:
             background_tasks.add_task(cleanup_status, request_id)
 
-        print(
-            f"✅ Analysis complete for {file.filename} in {result['processing_time']}s"
-        )
         return result
-
-    except HTTPException:
-        processing_status[request_id].update(
-            {"status": "error", "message": "Validation error"}
-        )
-        raise
 
     except Exception as e:
         error_msg = str(e)
-        print(f"❌ Prediction error: {error_msg}")
-
-        processing_status[request_id].update({"status": "error", "message": error_msg})
-
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "Internal server error",
-                "message": error_msg,
-                "request_id": request_id,
-            },
-        )
+        if request_id in processing_status:
+            processing_status[request_id].update(
+                {"status": "error", "message": error_msg}
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @app.post("/batch-predict")
@@ -472,7 +432,6 @@ async def batch_predict(files: list[UploadFile] = File(...)):
     results = []
     for file in files:
         try:
-            # Koristimo isti endpoint ali sa BackgroundTasks
             result = await predict_dual(file)
             results.append(result)
         except Exception as e:
@@ -483,8 +442,6 @@ async def batch_predict(files: list[UploadFile] = File(...)):
     return {
         "batch_id": f"batch_{int(time.time())}",
         "total_images": len(files),
-        "successful": len([r for r in results if "error" not in r]),
-        "failed": len([r for r in results if "error" in r]),
         "results": results,
     }
 
@@ -492,28 +449,13 @@ async def batch_predict(files: list[UploadFile] = File(...)):
 if __name__ == "__main__":
     import uvicorn
 
-    # Konfiguracija za bolje performanse
-    config = {
-        "host": "0.0.0.0",
-        "port": 8000,
-        "workers": 1,  # Koristi 1 worker zbog GPU/CPU memory sharing
-        "loop": "asyncio",
-        "http": "httptools",
-        "ws": "websockets",
-        "lifespan": "on",
-        "access_log": True,
-        "timeout_keep_alive": 30,
-    }
-
-    print(f"🚀 Starting server on {config['host']}:{config['port']}")
-    print(f"📡 CORS enabled for: {FRONTEND_URL}")
-    print(f"💾 Device: {device}")
-    print(f"🧠 Models: CNN={cnn_model is not None}, ViT={vit_model is not None}")
+    # Dinamički dohvaćamo port: na Hugging Face će biti sistemski PORT (npr. 7860), lokalno 8000
+    port = int(os.environ.get("PORT", 8000))
 
     uvicorn.run(
         "main:app",
-        host=config["host"],
-        port=config["port"],
-        reload=True,
-        reload_dirs=["."],
+        host="0.0.0.0",
+        port=port,
+        reload=True if port == 8000 else False,  # Reload samo lokalno
+        workers=1,
     )

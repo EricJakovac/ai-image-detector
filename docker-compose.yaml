@@ -3,16 +3,18 @@ services:
     build: ./backend
     container_name: fastAPI
     ports:
-      - "8000:8000"
+      - "8000:7860" 
     volumes:
       - ./backend:/app
       - ./ai_vs_real_84k_train_data:/app/data
     env_file:
       - ./backend/.env
+    environment:
+      - PORT=7860
+      - FRONTEND_URL=http://localhost:3000
     shm_size: '2gb'
-
-    # Za FastAPI, moramo dodati --reload u komandu da bi hot reload radio
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
+    
+    command: uvicorn main:app --host 0.0.0.0 --port 7860 --reload --reload-dir /app
 
   frontend:
     build: ./frontend
