@@ -1,23 +1,43 @@
 import os
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-from models.efficientnet_test import EfficientNetTest
+import timm
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 from PIL import Image, ImageFile
 import torch_directml
 import gc
 
-# Postavke za robusnije učitavanje slika
 Image.MAX_IMAGE_PIXELS = None
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
+# --- DEFINICIJA MODELA ---
+class EfficientNetTest(nn.Module):
+    """
+    EfficientNet-B0 model za binary klasifikaciju (AI vs real).
+    """
+
+    def __init__(self, num_classes=2, pretrained=True):
+        super().__init__()
+        self.backbone = timm.create_model(
+            "efficientnet_b0",
+            pretrained=pretrained,
+            num_classes=num_classes,
+            in_chans=3,
+        )
+
+    def forward(self, x):
+        return self.backbone(x)
+
+
 def train_cnn_windows_native():
+    # 1. Postava uređaja (DirectML za AMD)
     if torch_directml.is_available():
         device = torch_directml.device()
         print(f"🔥 DETEKTIRANA SNAGA (CNN): {torch_directml.device_name(0)}")
@@ -25,19 +45,34 @@ def train_cnn_windows_native():
         device = torch.device("cpu")
         print("⚠️ GPU NIJE PRONAĐEN!")
 
-    # --- PARAMETRI ---
-    MODEL_NAME = "EfficientNetTest_V2"
+    # 2. Parametri treninga
+    MODEL_NAME = "EfficientNet_B0_V2"
     IMG_SIZE = 224
-    BATCH_SIZE = 128  # Povećano na 128 (EfficientNet to može podnijeti)
+    BATCH_SIZE = 128
     EPOCHS = 5
     LEARNING_RATE = 2e-4
-    DATA_DIR = "../ai_vs_real_84k_train_data"  # Ispravljena putanja
-    SAVE_DIR = "models"
+
+    # 3. Pametno upravljanje putanjama
+    script_path = os.path.abspath(__file__)
+    train_dir = os.path.dirname(script_path)
+    backend_dir = os.path.dirname(train_dir)
+    root_dir = os.path.dirname(backend_dir)
+
+    # Putanje do podataka i spremanja
+    DATA_DIR = os.path.join(root_dir, "ai_vs_real_84k_train_data")
+    SAVE_DIR = os.path.join(backend_dir, "models")
 
     print(f"------------------------------------------")
-    print(f"🚀 POKRETANJE CNN V2 TRENINGA | Batch: {BATCH_SIZE} | LR: {LEARNING_RATE}")
+    print(f"🚀 POKRETANJE CNN TRENINGA")
+    print(f"📂 Dataset: {DATA_DIR}")
+    print(f"💾 Spremanje u: {SAVE_DIR}")
     print(f"------------------------------------------")
 
+    if not os.path.exists(DATA_DIR):
+        print(f"❌ GREŠKA: Dataset nije pronađen na lokaciji: {DATA_DIR}")
+        return
+
+    # 4. Priprema podataka
     transform = transforms.Compose(
         [
             transforms.Resize((IMG_SIZE, IMG_SIZE)),
@@ -47,17 +82,12 @@ def train_cnn_windows_native():
         ]
     )
 
-    if not os.path.exists(DATA_DIR):
-        print(f"❌ GREŠKA: Dataset nije pronađen na {DATA_DIR}")
-        return
-
     full_dataset = ImageFolder(DATA_DIR, transform=transform)
     indices = list(range(len(full_dataset)))
     train_idx, val_idx = train_test_split(
         indices, test_size=0.1, stratify=full_dataset.targets, random_state=42
     )
 
-    # Smanjen num_workers na 4 radi stabilnosti Windowsa (da ne šteka)
     train_loader = DataLoader(
         Subset(full_dataset, train_idx),
         batch_size=BATCH_SIZE,
@@ -73,10 +103,12 @@ def train_cnn_windows_native():
         pin_memory=True,
     )
 
+    # 5. Inicijalizacija modela
     model = EfficientNetTest(num_classes=2).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
+    # 6. Trening petlja
     for epoch in range(EPOCHS):
         model.train()
         print(f"\n📅 CNN Epoha {epoch+1}/{EPOCHS}")
@@ -90,11 +122,10 @@ def train_cnn_windows_native():
             loss.backward()
             optimizer.step()
 
-            # Oslobađanje memorije
             del outputs
 
             if batch_idx % 20 == 0:
-                gc.collect()  # Povremeno očisti Python smeće
+                gc.collect()
                 print(
                     f"⚡ [CNN Train] Batch: {batch_idx}/{len(train_loader)} | Loss: {loss.item():.4f}"
                 )
@@ -115,16 +146,16 @@ def train_cnn_windows_native():
                 del outputs
 
         acc = 100.0 * correct / total
-        print(f"📊 CNN Rezultat epohe {epoch+1}: Preciznost: {acc:.2f}%")
+        print(f"📊 Rezultat epohe {epoch+1}: Preciznost: {acc:.2f}%")
 
-        # --- AUTOMATSKO SPREMANJE NAKON SVAKE EPOHE ---
-        print(f"💾 Spremanje checkpointa za CNN epohu {epoch+1}...")
+        # --- SPREMANJE ---
         os.makedirs(SAVE_DIR, exist_ok=True)
-
-        # Naziv file-a sadrži datum i broj epohe
-        acc_str = f"{acc:.2f}".replace(".", "_")
-        epoch_file_name = f"{MODEL_NAME}_IMG{IMG_SIZE}_B{BATCH_SIZE}_LR{LEARNING_RATE}_Acc{acc_str}_E{epoch+1}.pth"
-        epoch_save_path = os.path.join(SAVE_DIR, epoch_file_name)
+        acc_str = f"{acc:.2f}"
+        # Formatiranje naziva datoteke
+        file_name = (
+            f"EffNetV2_IMG{IMG_SIZE}_B{BATCH_SIZE}_LR2e-4_Acc{acc_str}_E{epoch+1}.pth"
+        )
+        epoch_save_path = os.path.join(SAVE_DIR, file_name)
 
         try:
             model.to("cpu")
@@ -139,8 +170,8 @@ def train_cnn_windows_native():
             torch.save(
                 checkpoint, epoch_save_path, _use_new_zipfile_serialization=False
             )
-            print(f"✅ CNN Epoha {epoch+1} uspješno spremljena!")
-            model.to(device)  # Vrati na GPU
+            print(f"✅ SPREMLJENO: {file_name}")
+            model.to(device)
         except Exception as e:
             print(f"❌ Greška pri spremanju epohe: {e}")
             model.to(device)

@@ -1,0 +1,25 @@
+# Ignoriraj virtualna okruženja (bilo gdje u projektu)
+**/venv/
+**/.venv/
+**/env/
+**/node_modules/
+
+# Ignoriraj Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Ignoriraj teške modele i lokalne utege
+**/models/
+**/*.pth
+**/*.bin
+**/*.onnx
+
+# Ignoriraj git i ostalo smeće
+.git/
+.gitignore
+.dockerignore
+.vscode/
+.idea/
+**/DS_Store

@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,23 +27,34 @@ def train_vit_windows_native():
         device = torch.device("cpu")
         print("⚠️ GPU NIJE PRONAĐEN!")
 
-    # --- ULTRA-LIGHT PARAMETRI ---
-    MODEL_NAME = "ViT_Base_Patch16"
+    # --- PARAMETRI ---
+    MODEL_NAME = "ViT_PT16"
     IMG_SIZE = 224
-    BATCH_SIZE = 8  # Minimalni batch za stabilnost
-    ACCUMULATION_STEPS = 8  # 8*8 = 64 (Efektivna veličina batcha)
+    BATCH_SIZE = 8
+    ACCUMULATION_STEPS = 8  # Efektivni batch = 64
     EPOCHS = 5
-    LEARNING_RATE = 1e-5  # Niži LR za stabilniji rad
-    DATA_DIR = "../ai_vs_real_84k_train_data"
-    SAVE_DIR = "models"
+    LEARNING_RATE = 1e-5
 
-    # Glavna putanja (za finalni model)
-    SAVE_PATH = os.path.join(SAVE_DIR, "vit_transformer_model.pth")
+    # --- PAMETNO UPRAVLJANJE PUTANJAMA (Kao na CNN-u) ---
+    script_path = os.path.abspath(__file__)
+    train_dir = os.path.dirname(script_path)
+    backend_dir = os.path.dirname(train_dir)
+    root_dir = os.path.dirname(backend_dir)
+
+    DATA_DIR = os.path.join(root_dir, "ai_vs_real_84k_train_data")
+    SAVE_DIR = os.path.join(backend_dir, "models")
 
     print(f"------------------------------------------")
-    print(f"🚀 ULTRA-LIGHT ViT S AUTO-SAVEOM")
+    print(f"🚀 POKRETANJE ViT TRENINGA")
+    print(f"📂 Dataset: {DATA_DIR}")
+    print(f"💾 Spremanje u: {SAVE_DIR}")
     print(f"------------------------------------------")
 
+    if not os.path.exists(DATA_DIR):
+        print(f"❌ GREŠKA: Dataset nije pronađen na {DATA_DIR}")
+        return
+
+    # --- PRIPREMA PODATAKA ---
     transform = transforms.Compose(
         [
             transforms.Resize((IMG_SIZE, IMG_SIZE)),
@@ -51,10 +63,6 @@ def train_vit_windows_native():
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
-
-    if not os.path.exists(DATA_DIR):
-        print(f"❌ GREŠKA: Dataset nije pronađen na {DATA_DIR}")
-        return
 
     full_dataset = ImageFolder(DATA_DIR, transform=transform)
     indices = list(range(len(full_dataset)))
@@ -77,17 +85,19 @@ def train_vit_windows_native():
         pin_memory=True,
     )
 
+    # --- INICIJALIZACIJA MODELA ---
     print(f"🏗️ Učitavam ViT pre-trained težine...")
     model = timm.create_model(
         "vit_base_patch16_224", pretrained=True, num_classes=2
     ).to(device)
+
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.05)
 
+    # --- TRENING PETLJA ---
     for epoch in range(EPOCHS):
         model.train()
         optimizer.zero_grad()
-
         print(f"\n📅 ViT Epoha {epoch+1}/{EPOCHS}")
 
         for batch_idx, (inputs, labels) in enumerate(train_loader):
@@ -95,7 +105,6 @@ def train_vit_windows_native():
 
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-
             loss = loss / ACCUMULATION_STEPS
             loss.backward()
 
@@ -113,7 +122,7 @@ def train_vit_windows_native():
 
             del loss
 
-        # --- VALIDACIJA NAKON EPOHE ---
+        # --- VALIDACIJA ---
         model.eval()
         correct, total = 0, 0
         print(f"🧪 Validacija epohe {epoch+1} u tijeku...")
@@ -129,30 +138,33 @@ def train_vit_windows_native():
         acc_val = 100.0 * correct / total
         print(f"📊 Rezultat epohe {epoch+1}: Preciznost: {acc_val:.2f}%")
 
-        # --- AUTOMATSKO SPREMANJE NAKON SVAKE EPOHE ---
-        print(f"💾 Spremanje checkpointa za epohu {epoch+1}...")
+        # --- AUTOMATSKO SPREMANJE ---
         os.makedirs(SAVE_DIR, exist_ok=True)
+        acc_str = f"{acc_val:.2f}"
+        # Formatiranje naziva datoteke
+        file_name = f"{MODEL_NAME}_IMG{IMG_SIZE}_B{BATCH_SIZE}_LR1e-5_Acc{acc_str}_E{epoch+1}.pth"
+        epoch_save_path = os.path.join(SAVE_DIR, file_name)
 
-        # Privremeno šaljemo na CPU za sigurno spremanje
-        model.to("cpu")
-        checkpoint = {
-            "model_state_dict": model.state_dict(),
-            "model_name": MODEL_NAME,
-            "class_to_idx": full_dataset.class_to_idx,
-            "accuracy": f"{acc_val:.2f}%",
-            "epoch": epoch + 1,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        }
+        try:
+            model.to("cpu")
+            checkpoint = {
+                "model_state_dict": model.state_dict(),
+                "model_name": MODEL_NAME,
+                "class_to_idx": full_dataset.class_to_idx,
+                "accuracy": f"{acc_val:.2f}%",
+                "epoch": epoch + 1,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+            torch.save(
+                checkpoint, epoch_save_path, _use_new_zipfile_serialization=False
+            )
+            print(f"✅ SPREMLJENO: {file_name}")
+            model.to(device)
+        except Exception as e:
+            print(f"❌ Greška pri spremanju: {e}")
+            model.to(device)
 
-        # Svaka epoha dobiva svoj file (npr. vit_transformer_model_epoch_1.pth)
-        epoch_save_path = f"{SAVE_PATH.replace('.pth', '')}_epoch_{epoch+1}.pth"
-        torch.save(checkpoint, epoch_save_path, _use_new_zipfile_serialization=False)
-        print(f"✅ Epoha {epoch+1} spremljena na: {epoch_save_path}")
-
-        # Vraćamo model na GPU za nastavak
-        model.to(device)
-
-    print(f"\n✅ TRENING ZAVRŠEN! Finalni model bi trebao biti: {epoch_save_path}")
+    print(f"\n🏁 ViT TRENING ZAVRŠEN!")
 
 
 if __name__ == "__main__":
