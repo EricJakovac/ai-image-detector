@@ -81,23 +81,23 @@ function App() {
     return URL.createObjectURL(file);
   };
 
-  // Predviđanje za jednu sliku
-  const predictSingleImage = async (file) => {
+  // Predviđanje za usporedbu RAW vs Fine-tuned
+  const predictComparison = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       const response = await axios.post(
-        `${REACT_APP_API_URL}/predict-dual`,
+        `${REACT_APP_API_URL}/predict-comparison`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-          timeout: 120000,
+          timeout: 180000, // 3 minute (RAW modeli su sporiji)
         },
       );
       return response.data;
     } catch (error) {
-      console.error("Prediction error:", error);
+      console.error("Comparison prediction error:", error);
       throw error;
     }
   };
@@ -115,7 +115,8 @@ function App() {
         console.log(`Processing ${i + 1}/${images.length}: ${file.name}`);
 
         try {
-          const result = await predictSingleImage(file);
+          const result = await predictComparison(file);
+
           predictions.push({
             ...result,
             preview: getImagePreview(file),
@@ -143,7 +144,10 @@ function App() {
 
   // Formatiraj postotak
   const formatPercentage = (value) => {
-    return (value * 100).toFixed(1) + "%";
+    if (typeof value === "number") {
+      return (value * 100).toFixed(1) + "%";
+    }
+    return "0.0%";
   };
 
   // Klasa za confidence
@@ -153,16 +157,82 @@ function App() {
     return "low-confidence";
   };
 
+  // Render model kartice za comparison mode
+  const renderModelCard = (modelData, modelKey) => {
+    if (!modelData) {
+      return (
+        <div className={`model-card error`}>
+          <h5 className="model-title">
+            <span className="model-icon">❌</span> {modelKey.replace("_", " ")}
+          </h5>
+          <div className="error-message">Model data not available</div>
+        </div>
+      );
+    }
+
+    const isFineTuned = modelKey.includes("fine_tuned");
+    const modelName =
+      modelData.name || modelKey.replace("_", " ").toUpperCase();
+
+    return (
+      <div className={`model-card ${isFineTuned ? "fine-tuned" : "raw"}`}>
+        <h5 className="model-title">
+          <span className="model-icon">
+            {modelKey.includes("cnn") ? "🖼️" : "🧠"}
+          </span>{" "}
+          {modelName}
+        </h5>
+        <div
+          className={`prediction-label ${modelData.label?.toLowerCase() || "unknown"}`}
+        >
+          {modelData.label || "Unknown"}
+        </div>
+        <div
+          className={`confidence-badge ${getConfidenceClass(modelData.probability || 0)}`}
+        >
+          {modelData.confidence_percent
+            ? `${modelData.confidence_percent.toFixed(1)}%`
+            : modelData.probability
+              ? formatPercentage(modelData.probability)
+              : "0.0%"}
+        </div>
+        <div className="probability-details">
+          Real:{" "}
+          {modelData.raw_probabilities?.real
+            ? formatPercentage(modelData.raw_probabilities.real)
+            : "0.0%"}
+          <br />
+          AI:{" "}
+          {modelData.raw_probabilities?.ai
+            ? formatPercentage(modelData.raw_probabilities.ai)
+            : "0.0%"}
+        </div>
+        {/* VIZUALIZACIJA - samo ako postoji */}
+        <div className="model-visualization">
+          {modelData.visualization ? (
+            <img
+              src={`data:image/png;base64,${modelData.visualization}`}
+              alt={`${modelName} Visualization`}
+              className="model-heatmap"
+            />
+          ) : (
+            <div className="no-visualization">No visualization available</div>
+          )}
+        </div>
+        {/* BADGE za fine-tuned modele */}
+        {isFineTuned && <div className="fine-tuned-badge">🚀 Fine-tuned</div>}
+          {/* BADGE za raw modele */}
+        {!isFineTuned && <div className="raw-badge">🌐 ImageNet</div>}
+      </div>
+    );
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>
-          AI Image Detector - EfficientNet-B0 (CNN) vs Vision Transformer
-          (ViT-Small/16) Comparison
-        </h1>
+        <h1>AI Image Detector - Model Comparison</h1>
         <p className="subtitle">
-          Upload up to {MAX_FILES} images to compare predictions from both AI
-          detection models
+          Upload up to {MAX_FILES} images to compare RAW vs Fine-tuned AI models
         </p>
       </header>
 
@@ -234,7 +304,7 @@ function App() {
                     Analyzing {images.length} image(s)...
                   </>
                 ) : (
-                  `🔍 Analyze with CNN & ViT Models`
+                  `🔄 Compare RAW vs Fine-tuned Models`
                 )}
               </button>
             </div>
@@ -247,173 +317,147 @@ function App() {
             <h2>📊 Analysis Results</h2>
             <p className="results-count">
               {results.length} image{results.length !== 1 ? "s" : ""} analyzed
+              (4 models each)
             </p>
 
             <div className="results-grid">
               {results.map((result, index) => (
                 <div key={index} className="result-card">
                   {/* ORIGINAL IMAGE */}
-                  <div className="image-container">
+                  <div className="original-image-container">
                     <h4 className="image-title">
-                      {result.filename || result.error}
+                      {result.filename || "Image"}
                     </h4>
                     <img
                       src={result.preview}
                       alt="Original"
                       className="original-image"
                     />
-
-                    {/* ERROR STATE */}
-                    {result.error && (
-                      <div className="error-message">
-                        ❌ Error: {result.error}
-                      </div>
-                    )}
+                    <div className="image-meta">
+                      <span>Type: {result.file_type || "Unknown"}</span>
+                      <span>Size: {result.image_size || "Unknown"}</span>
+                    </div>
                   </div>
 
-                  {/* RESULTS IF NO ERROR */}
-                  {!result.error && (
-                    <>
-                      {/* MODEL COMPARISON */}
-                      <div className="model-comparison">
-                        {/* CNN Model */}
-                        <div className="model-result cnn-model">
-                          <h5 className="model-title">
-                            <span className="model-icon">🖼️</span> CNN
-                            (EfficientNet)
-                          </h5>
-                          {/* Labela je sada dinamička i točna */}
-                          <div
-                            className={`prediction ${result.cnn.label.toLowerCase()}`}
-                          >
-                            {result.cnn.label}
-                          </div>
-                          {/* Confidence se odnosi na ispisanu labelu */}
-                          <div
-                            className={`confidence ${getConfidenceClass(result.cnn.probability)}`}
-                          >
-                            Confidence:{" "}
-                            {formatPercentage(result.cnn.probability)}
-                          </div>
-                          {/* Detalji sada vuku točne ključeve iz raw_probabilities */}
-                          <div className="probability-details">
-                            Real:{" "}
-                            {formatPercentage(
-                              result.cnn.raw_probabilities?.real,
-                            )}{" "}
-                            | AI:{" "}
-                            {formatPercentage(result.cnn.raw_probabilities?.ai)}
-                          </div>
-                        </div>
+                  {/* ERROR STATE */}
+                  {result.error && (
+                    <div className="error-message">
+                      ❌ Error: {result.error}
+                    </div>
+                  )}
 
-                        {/* ViT Model */}
-                        <div className="model-result vit-model">
-                          <h5 className="model-title">
-                            <span className="model-icon">🧠</span> ViT (Vision
-                            Transformer)
-                          </h5>
-                          <div
-                            className={`prediction ${result.vit.label.toLowerCase()}`}
-                          >
-                            {result.vit.label}
-                          </div>
-                          <div
-                            className={`confidence ${getConfidenceClass(result.vit.probability)}`}
-                          >
-                            Confidence:{" "}
-                            {formatPercentage(result.vit.probability)}
-                          </div>
-                          <div className="probability-details">
-                            Real:{" "}
-                            {formatPercentage(
-                              result.vit.raw_probabilities?.real,
-                            )}{" "}
-                            | AI:{" "}
-                            {formatPercentage(result.vit.raw_probabilities?.ai)}
-                          </div>
-                        </div>
+                  {/* 4-MODEL GRID */}
+                  {!result.error && result.models && (
+                    <>
+                      <div className="comparison-grid">
+                        {renderModelCard(
+                          result.models.cnn_fine_tuned,
+                          "cnn_fine_tuned",
+                        )}
+                        {renderModelCard(result.models.cnn_raw, "cnn_raw")}
+                        {renderModelCard(
+                          result.models.vit_fine_tuned,
+                          "vit_fine_tuned",
+                        )}
+                        {renderModelCard(result.models.vit_raw, "vit_raw")}
                       </div>
 
-                      {/* AGREEMENT INDICATOR */}
+                      {/* COMPARISON SUMMARY */}
                       {result.comparison && (
-                        <div
-                          className={`agreement-indicator ${result.comparison.models_agree ? "agree" : "disagree"}`}
-                        >
-                          <div className="agreement-icon">
-                            {result.comparison.models_agree ? "✅" : "⚠️"}
-                          </div>
-                          <div className="agreement-text">
-                            <strong>{result.comparison.agreement}</strong>
-                            {result.comparison.confidence_difference && (
-                              <span>
-                                {" "}
-                                (Difference:{" "}
-                                {result.comparison.confidence_difference}%)
+                        <div className="comparison-summary">
+                          <div className="summary-card">
+                            <h5 className="summary-title">
+                              📈 Fine-tuning Improvement
+                            </h5>
+                            <div className="improvement-stats">
+                              <div className="improvement-stat">
+                                <span className="stat-label">CNN:</span>
+                                <span className="stat-value improvement-positive">
+                                  +
+                                  {Math.abs(
+                                    result.comparison.cnn_improvement || 0,
+                                  ).toFixed(1)}
+                                  %
+                                </span>
+                              </div>
+                              <div className="improvement-stat">
+                                <span className="stat-label">ViT:</span>
+                                <span className="stat-value improvement-positive">
+                                  +
+                                  {Math.abs(
+                                    result.comparison.vit_improvement || 0,
+                                  ).toFixed(1)}
+                                  %
+                                </span>
+                              </div>
+                            </div>
+                            <div className="summary-text">
+                              Fine-tuning improves CNN by{" "}
+                              {Math.abs(
+                                result.comparison.cnn_improvement || 0,
+                              ).toFixed(1)}
+                              % and ViT by{" "}
+                              {Math.abs(
+                                result.comparison.vit_improvement || 0,
+                              ).toFixed(1)}
+                              %
+                            </div>
+
+                            <div className="prediction-agreement">
+                              <div className="agreement-item">
+                                <span className="agreement-label">
+                                  CNN agreement:
+                                </span>
+                                <span
+                                  className={`agreement-value ${result.comparison.cnn_same_prediction ? "agree" : "disagree"}`}
+                                >
+                                  {result.comparison.cnn_same_prediction
+                                    ? "✅ Yes"
+                                    : "❌ No"}
+                                </span>
+                              </div>
+                              <div className="agreement-item">
+                                <span className="agreement-label">
+                                  ViT agreement:
+                                </span>
+                                <span
+                                  className={`agreement-value ${result.comparison.vit_same_prediction ? "agree" : "disagree"}`}
+                                >
+                                  {result.comparison.vit_same_prediction
+                                    ? "✅ Yes"
+                                    : "❌ No"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="best-model">
+                              <span className="best-model-label">
+                                Best performing model:
                               </span>
-                            )}
+                              <span className="best-model-value">
+                                {result.comparison.best_model
+                                  ?.replace(/_/g, " ")
+                                  .toUpperCase() || "Unknown"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
 
-                      {/* VISUALIZATIONS */}
-                      <div className="visualizations">
-                        <div className="visualization">
-                          <h5 className="viz-title">CNN Grad-CAM Heatmap</h5>
-                          <p className="viz-description">
-                            Areas that influenced CNN's decision
-                          </p>
-                          {result.cnn.visualization ? (
-                            <img
-                              src={`data:image/png;base64,${result.cnn.visualization}`}
-                              alt="CNN Grad-CAM"
-                              className="heatmap-image"
-                            />
-                          ) : (
-                            <div className="viz-placeholder">
-                              No visualization available
-                            </div>
-                          )}
+                      {/* PROCESSING INFO */}
+                      <div className="processing-info">
+                        <div className="info-item">
+                          <span className="info-label">Processed at:</span>
+                          <span className="info-value">224×224 resolution</span>
                         </div>
-
-                        <div className="visualization">
-                          <h5 className="viz-title">ViT Attention Map</h5>
-                          <p className="viz-description">
-                            Areas where ViT focused attention
-                          </p>
-                          {result.vit.visualization ? (
-                            <img
-                              src={`data:image/png;base64,${result.vit.visualization}`}
-                              alt="ViT Attention Map"
-                              className="heatmap-image"
-                            />
-                          ) : (
-                            <div className="viz-placeholder">
-                              No visualization available
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* SUMMARY STATS */}
-                      <div className="summary-stats">
-                        <div className="stat">
-                          <span className="stat-label">File Type:</span>
-                          <span className="stat-value">
-                            {result.file_type || "Unknown"}
-                          </span>
-                        </div>
-                        <div className="stat">
-                          <span className="stat-label">Original Size:</span>
-                          <span className="stat-value">
-                            {result.image_size || "Unknown"}
-                          </span>
-                        </div>
-                        <div className="stat">
-                          <span className="stat-label">Processed Size:</span>
-                          <span className="stat-value">
-                            {result.processed_size || "224x224"}
-                          </span>
-                        </div>
+                        {result.processing_time && (
+                          <div className="info-item">
+                            <span className="info-label">Processing time:</span>
+                            <span className="info-value">
+                              {result.processing_time}s
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -429,9 +473,9 @@ function App() {
             <div className="loading-content">
               <div className="loading-spinner"></div>
               <h3>Analyzing Images...</h3>
-              <p>Running CNN and ViT models with visualizations</p>
+              <p>Running 4 models per image (CNN/ViT × RAW/Fine-tuned)</p>
               <p className="loading-note">
-                This may take 10-30 seconds per image
+                This may take 30-60 seconds per image
               </p>
             </div>
           </div>
@@ -440,12 +484,11 @@ function App() {
 
       <footer className="App-footer">
         <p>
-          <strong>AI Image Detector</strong> • Compares CNN (EfficientNet) vs
-          ViT (Vision Transformer) predictions
+          <strong>AI Image Detector</strong> • Compare RAW vs Fine-tuned models
         </p>
         <p className="footer-note">
-          Models analyze images at 224x224 resolution • Heatmaps show model
-          attention areas
+          RAW models: ImageNet pretrained • Fine-tuned: optimized for AI
+          detection • All images processed at 224×224 resolution
         </p>
       </footer>
     </div>
