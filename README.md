@@ -22,6 +22,7 @@ Ovaj projekt koristi duboko učenje (Deep Learning) za detekciju slika generiran
     - **Grad-CAM** za CNN (prikazuje gdje model "gleda").
     - **Attention Maps** za ViT (prikazuje fokus transformera).
 - **Hugging Face Hub:** Automatsko preuzimanje naučenih utega modela (weights) prilikom prvog pokretanja.
+- **Link od dataseta** https://www.kaggle.com/datasets/ishu0505/ai-vs-real-84k-train-data
 
 ### 2. Frontend (React)
 - Moderan UI za upload slika i prikaz paralelnih rezultata iz oba modela.
