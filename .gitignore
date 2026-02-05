@@ -17,9 +17,6 @@ data_mini/
 *.pth
 *.pt
 *.h5
-# Dozvoli (whitelist) samo glavne modele koji se koriste u aplikaciji
-!backend/models/cnn_efficientnet/model.pth
-!backend/models/vit_transformer/model.pth
 
 # Logs i OS
 *.log
@@ -32,3 +29,8 @@ Thumbs.db
 
 # .env
 **/.env
+
+# ostalo
+**.pdf
+**.docx
+**.pptx

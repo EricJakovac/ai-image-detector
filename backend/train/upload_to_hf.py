@@ -43,17 +43,27 @@ MODELS_CONFIG = [
     },
     {
         "hf_folder": "cnn_raw",
-        "local_path": os.path.join(
-            MODELS_DIR, "cnn_raw", "model.pth"
-        ),  # 👈 PRAVA PUTANJA
+        "local_path": os.path.join(MODELS_DIR, "cnn_raw", "model.pth"),
         "description": "CNN Raw (ImageNet)",
     },
     {
         "hf_folder": "vit_raw",
-        "local_path": os.path.join(
-            MODELS_DIR, "vit_raw", "model.pth"
-        ),  # 👈 PRAVA PUTANJA
+        "local_path": os.path.join(MODELS_DIR, "vit_raw", "model.pth"),
         "description": "ViT Raw (ImageNet)",
+    },
+    {
+        "hf_folder": "deit_transformer",
+        "local_path": os.path.join(
+            MODELS_DIR, "DeiT_PT16_IMG224_B8_LR1e-5_Acc95.02_E4.pth"
+        ),
+        "description": "DeiT Fine-tuned (224x224)",
+    },
+    {
+        "hf_folder": "convnext_tiny",
+        "local_path": os.path.join(
+            MODELS_DIR, "ConvNeXt_T_IMG224_B16_LR2e-4_Acc89.32_E5.pth"
+        ),
+        "description": "ConvNeXt Tiny Fine-tuned (224x224)",
     },
 ]
 

@@ -1,0 +1,53 @@
+.image-label {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9ff;
+  border-radius: 8px;
+  border: 1px solid #e0e0ff;
+}
+
+.label-text {
+  display: block;
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.label-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.label-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.label-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.label-btn.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.label-btn:nth-child(1).active {
+  background: #f44336;
+  border-color: #f44336;
+}
+
+.label-btn:nth-child(2).active {
+  background: #4caf50;
+  border-color: #4caf50;
+}

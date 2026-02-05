@@ -10,17 +10,44 @@ import torchvision.transforms.functional as F
 
 
 class GradCamGenerator:
-    def __init__(self, model):
-        self.model = model.eval()
+    def __init__(self, model, model_type="efficientnet"):
+        """
+        Inicijalizira Grad-CAM generator za EfficientNet model.
 
-        # Target layer za EfficientNet
-        target_module = model.backbone.conv_head
+        Args:
+            model: PyTorch model (EfficientNetTest)
+            model_type: Tip modela za print poruku
+        """
+        self.model = model.eval()
+        self.model_type = model_type
+
+        if hasattr(model, "efficientnet"):
+            # Za EfficientNetTest arhitekturu
+            target_module = model.efficientnet.features[-1]  # Zadnji feature block
+        elif hasattr(model, "features"):
+            # Direktan pristup
+            target_module = model.features[-1]
+        elif hasattr(model, "model") and hasattr(model.model, "features"):
+            # Ako je model omotan u neki wrapper
+            target_module = model.model.features[-1]
+        else:
+            # Fallback: pokušaj pronaći conv_head ili features
+            for name, module in model.named_modules():
+                if "conv_head" in name.lower() or "features" in name.lower():
+                    target_module = module
+                    break
+            else:
+                raise AttributeError(
+                    f"Nije moguće pronaći target layer za {model_type}"
+                )
+
         self.target_layers = [target_module]
         self.cam = GradCAM(model=self.model, target_layers=self.target_layers)
-        print(f"✅ Grad-CAM generator inicijaliziran za EfficientNet")
+        print(f"✅ Grad-CAM generator inicijaliziran za {model_type}")
 
     def generate_single(self, pil_image, target_class=0):
         """Grad-CAM → base64 PNG."""
+
         # Resize za model
         resized_img = pil_image.resize((224, 224))
 

@@ -1,0 +1,313 @@
+.comparison-summary {
+  margin: 30px 0;
+}
+
+.summary-card {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.summary-title {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.improvement-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+}
+
+.improvement-stat {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.improvement-positive {
+  color: #a5d6a7;
+}
+
+.summary-text {
+  text-align: center;
+  margin: 20px 0;
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+.prediction-agreement {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.agreement-item {
+  text-align: center;
+}
+
+.agreement-label {
+  display: block;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 5px;
+}
+
+.agreement-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.agreement-value.agree {
+  color: #a5d6a7;
+}
+
+.agreement-value.disagree {
+  color: #ffabab;
+}
+
+.best-model {
+  text-align: center;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.best-model-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-right: 10px;
+}
+
+.best-model-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff176;
+}
+
+.stat-value.correct {
+  color: #4caf50;
+}
+
+.stat-value.incorrect {
+  color: #f44336;
+}
+
+.user-label-info {
+  text-align: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.accuracy-info {
+  margin-top: 5px;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.best-model-name {
+  color: #fff176;
+  font-weight: 700;
+}
+
+.agreement-item .agree {
+  color: #a5d6a7;
+}
+
+.agreement-item .disagree {
+  color: #ffabab;
+}
+
+/* ComparisonSummary.css - DODAJTE OVE STILOVE */
+
+/* TOČNOST METRIKA */
+.accuracy-stats {
+  margin: 20px 0;
+}
+
+.accuracy-meter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.accuracy-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.accuracy-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff176;
+}
+
+.accuracy-fraction {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin-left: 5px;
+}
+
+.accuracy-visual {
+  margin-top: 10px;
+}
+
+.accuracy-bar {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accuracy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+/* MODEL ACCURACY GRID */
+.model-accuracy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.model-accuracy-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.model-accuracy-item.correct {
+  border-left: 4px solid #4caf50;
+}
+
+.model-accuracy-item.incorrect {
+  border-left: 4px solid #f44336;
+}
+
+.model-accuracy-name {
+  font-weight: 600;
+}
+
+.model-accuracy-status {
+  font-size: 1.2rem;
+}
+
+/* BEST MODELS SECTION */
+.best-models-section {
+  margin: 25px 0;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.best-models-title {
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: #fff176;
+  text-align: center;
+}
+
+.best-models-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.best-model-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.best-model-name {
+  font-weight: 600;
+}
+
+.best-model-confidence {
+  font-size: 0.9rem;
+  color: #fff176;
+}
+
+.no-best-model {
+  text-align: center;
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+/* PERFORMANCE FEEDBACK */
+.performance-feedback {
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 15px;
+  font-size: 1.1rem;
+}
+
+.performance-feedback.perfect {
+  background: rgba(76, 175, 80, 0.2);
+  color: #a5d6a7;
+  border: 1px solid #4caf50;
+}
+
+.performance-feedback.partial {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffd54f;
+  border: 1px solid #ffc107;
+}
+
+.performance-feedback.poor {
+  background: rgba(244, 67, 54, 0.2);
+  color: #ffabab;
+  border: 1px solid #f44336;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .model-accuracy-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .accuracy-value {
+    font-size: 1.5rem;
+  }
+  
+  .best-models-list {
+    font-size: 0.9rem;
+  }
+
+  .improvement-stats,
+  .prediction-agreement {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
