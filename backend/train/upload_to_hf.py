@@ -30,7 +30,7 @@ MODELS_CONFIG = [
     {
         "hf_folder": "cnn_efficientnet",
         "local_path": os.path.join(
-            MODELS_DIR, "EffNetV2_IMG224_B128_LR2e-4_Acc95.40_E5.pth"
+            MODELS_DIR, "EffNet_IMG224_B128_LR2e-4_Acc95.40_E5.pth"
         ),
         "description": "CNN Fine-tuned (224x224)",
     },

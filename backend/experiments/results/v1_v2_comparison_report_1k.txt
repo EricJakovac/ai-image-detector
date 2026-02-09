@@ -1,0 +1,91 @@
+V1 vs V2 COMPARISON REPORT
+==================================================
+
+MODEL: convnext
+  V1:
+    accuracy: 0.1700
+    precision: 0.1648
+    recall: 0.1700
+    f1_score: 0.1668
+    roc_auc: 0.0900
+    confusion_matrix: [[58, 192], [223, 27]]
+    specificity: 0.2320
+    sensitivity: 0.1080
+    num_samples: 500.0000
+  V2:
+    accuracy: 0.1160
+    precision: 0.1151
+    recall: 0.1160
+    f1_score: 0.1155
+    roc_auc: 0.0482
+    confusion_matrix: [[35, 215], [227, 23]]
+    specificity: 0.1400
+    sensitivity: 0.0920
+    num_samples: 500.0000
+----------------------------------------
+MODEL: deit
+  V1:
+    accuracy: 0.2060
+    precision: 0.1715
+    recall: 0.2060
+    f1_score: 0.1846
+    roc_auc: 0.1085
+    confusion_matrix: [[11, 239], [158, 92]]
+    specificity: 0.0440
+    sensitivity: 0.3680
+    num_samples: 500.0000
+  V2:
+    accuracy: 0.0860
+    precision: 0.0860
+    recall: 0.0860
+    f1_score: 0.0860
+    roc_auc: 0.0305
+    confusion_matrix: [[22, 228], [229, 21]]
+    specificity: 0.0880
+    sensitivity: 0.0840
+    num_samples: 500.0000
+----------------------------------------
+MODEL: effnet
+  V1:
+    accuracy: 0.2160
+    precision: 0.1933
+    recall: 0.2160
+    f1_score: 0.2012
+    roc_auc: 0.1641
+    confusion_matrix: [[20, 230], [162, 88]]
+    specificity: 0.0800
+    sensitivity: 0.3520
+    num_samples: 500.0000
+  V2:
+    accuracy: 0.1860
+    precision: 0.1790
+    recall: 0.1860
+    f1_score: 0.1815
+    roc_auc: 0.1405
+    confusion_matrix: [[28, 222], [185, 65]]
+    specificity: 0.1120
+    sensitivity: 0.2600
+    num_samples: 500.0000
+----------------------------------------
+MODEL: vit
+  V1:
+    accuracy: 0.1900
+    precision: 0.1495
+    recall: 0.1900
+    f1_score: 0.1659
+    roc_auc: 0.0850
+    confusion_matrix: [[5, 245], [160, 90]]
+    specificity: 0.0200
+    sensitivity: 0.3600
+    num_samples: 500.0000
+  V2:
+    accuracy: 0.0900
+    precision: 0.0889
+    recall: 0.0900
+    f1_score: 0.0894
+    roc_auc: 0.0367
+    confusion_matrix: [[16, 234], [221, 29]]
+    specificity: 0.0640
+    sensitivity: 0.1160
+    num_samples: 500.0000
+----------------------------------------

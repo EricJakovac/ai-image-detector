@@ -6,8 +6,11 @@ venv/
 __pycache__/
 *.pyc
 
-# DATA I VELIKI FAJLOVI - Dodaj svoj folder sa slikama ovdje!
+# DATA I VELIKI FAJLOVI
 ai_vs_real_84k_train_data/
+evaluation_dataset/
+novi_ai_vs_real_dataset_1k/
+novi_ai_vs_real_dataset_2k/
 data/
 data_mini/
 *.zip

@@ -1,0 +1,194 @@
+{
+  "title": "V1 vs V2 usporedba",
+  "timestamp": "2026-02-09 10:17:33",
+  "models": {
+    "effnet_v1": {
+      "version": "V1",
+      "metrics": {
+        "accuracy": 0.216,
+        "precision": 0.19330983481926878,
+        "recall": 0.216,
+        "f1_score": 0.20122587376108497,
+        "roc_auc": 0.16410400000000003,
+        "confusion_matrix": [
+          [
+            20,
+            230
+          ],
+          [
+            162,
+            88
+          ]
+        ],
+        "specificity": 0.08,
+        "sensitivity": 0.352,
+        "num_samples": 500
+      }
+    },
+    "vit_v1": {
+      "version": "V1",
+      "metrics": {
+        "accuracy": 0.19,
+        "precision": 0.1494798733604704,
+        "recall": 0.19,
+        "f1_score": 0.1658943466172382,
+        "roc_auc": 0.08496000000000001,
+        "confusion_matrix": [
+          [
+            5,
+            245
+          ],
+          [
+            160,
+            90
+          ]
+        ],
+        "specificity": 0.02,
+        "sensitivity": 0.36,
+        "num_samples": 500
+      }
+    },
+    "deit_v1": {
+      "version": "V1",
+      "metrics": {
+        "accuracy": 0.206,
+        "precision": 0.17151718836589855,
+        "recall": 0.206,
+        "f1_score": 0.1846006597135217,
+        "roc_auc": 0.108528,
+        "confusion_matrix": [
+          [
+            11,
+            239
+          ],
+          [
+            158,
+            92
+          ]
+        ],
+        "specificity": 0.044,
+        "sensitivity": 0.368,
+        "num_samples": 500
+      }
+    },
+    "convnext_v1": {
+      "version": "V1",
+      "metrics": {
+        "accuracy": 0.17,
+        "precision": 0.16484668259152732,
+        "recall": 0.17,
+        "f1_score": 0.16679716831500285,
+        "roc_auc": 0.090016,
+        "confusion_matrix": [
+          [
+            58,
+            192
+          ],
+          [
+            223,
+            27
+          ]
+        ],
+        "specificity": 0.232,
+        "sensitivity": 0.108,
+        "num_samples": 500
+      }
+    },
+    "effnet_v2_1k": {
+      "version": "V2",
+      "metrics": {
+        "accuracy": 0.186,
+        "precision": 0.17896811764898332,
+        "recall": 0.186,
+        "f1_score": 0.1815179925270783,
+        "roc_auc": 0.14045600000000003,
+        "confusion_matrix": [
+          [
+            28,
+            222
+          ],
+          [
+            185,
+            65
+          ]
+        ],
+        "specificity": 0.112,
+        "sensitivity": 0.26,
+        "num_samples": 500
+      }
+    },
+    "vit_v2_1k": {
+      "version": "V2",
+      "metrics": {
+        "accuracy": 0.09,
+        "precision": 0.08888835410951212,
+        "recall": 0.09,
+        "f1_score": 0.08938442387053648,
+        "roc_auc": 0.03665600000000001,
+        "confusion_matrix": [
+          [
+            16,
+            234
+          ],
+          [
+            221,
+            29
+          ]
+        ],
+        "specificity": 0.064,
+        "sensitivity": 0.116,
+        "num_samples": 500
+      }
+    },
+    "deit_v2_1k": {
+      "version": "V2",
+      "metrics": {
+        "accuracy": 0.086,
+        "precision": 0.0859933758940143,
+        "recall": 0.086,
+        "f1_score": 0.08599634398537595,
+        "roc_auc": 0.030504000000000003,
+        "confusion_matrix": [
+          [
+            22,
+            228
+          ],
+          [
+            229,
+            21
+          ]
+        ],
+        "specificity": 0.088,
+        "sensitivity": 0.084,
+        "num_samples": 500
+      }
+    },
+    "convnext_v2_1k": {
+      "version": "V2",
+      "metrics": {
+        "accuracy": 0.116,
+        "precision": 0.11511322086086344,
+        "recall": 0.116,
+        "f1_score": 0.1154905225409836,
+        "roc_auc": 0.04820800000000001,
+        "confusion_matrix": [
+          [
+            35,
+            215
+          ],
+          [
+            227,
+            23
+          ]
+        ],
+        "specificity": 0.14,
+        "sensitivity": 0.092,
+        "num_samples": 500
+      }
+    }
+  },
+  "plots": {
+    "bar_plot": "C:\\Users\\jakov\\Desktop\\IIS\\ai-image-detector\\backend\\experiments\\results\\v1_v2_bar_comparison_1k.png",
+    "radar_plot": "C:\\Users\\jakov\\Desktop\\IIS\\ai-image-detector\\backend\\experiments\\results\\v1_v2_radar_comparison_1k.png"
+  }
+}
