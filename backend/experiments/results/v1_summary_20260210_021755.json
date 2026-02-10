@@ -1,0 +1,46 @@
+{
+  "effnet_v1": {
+    "accuracy": 0.4682731975640102,
+    "f1_score": 0.38838876994840765,
+    "roc_auc": 0.5021582264032288,
+    "specificity": 0.12631966609378836,
+    "sensitivity": 0.8592280701754386,
+    "balanced_accuracy": 0.49277386813461344,
+    "num_samples": 15271,
+    "num_real": 8146,
+    "num_ai": 7125
+  },
+  "vit_v1": {
+    "accuracy": 0.49400825093314127,
+    "f1_score": 0.430944544634305,
+    "roc_auc": 0.5699826585860674,
+    "specificity": 0.17763319420574514,
+    "sensitivity": 0.855719298245614,
+    "balanced_accuracy": 0.5166762462256795,
+    "num_samples": 15271,
+    "num_real": 8146,
+    "num_ai": 7125
+  },
+  "deit_v1": {
+    "accuracy": 0.48765634208630737,
+    "f1_score": 0.36238736572922575,
+    "roc_auc": 0.6747774173956866,
+    "specificity": 0.06604468450773386,
+    "sensitivity": 0.9696842105263158,
+    "balanced_accuracy": 0.5178644475170249,
+    "num_samples": 15271,
+    "num_real": 8146,
+    "num_ai": 7125
+  },
+  "convnext_v1": {
+    "accuracy": 0.4944011525112959,
+    "f1_score": 0.4083485714222258,
+    "roc_auc": 0.6441959416094866,
+    "specificity": 0.13172109010557329,
+    "sensitivity": 0.9090526315789473,
+    "balanced_accuracy": 0.5203868608422603,
+    "num_samples": 15271,
+    "num_real": 8146,
+    "num_ai": 7125
+  }
+}

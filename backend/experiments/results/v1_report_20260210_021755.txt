@@ -1,0 +1,47 @@
+V1 MODELS EVALUATION REPORT
+========================================
+
+Model: effnet_v1
+  accuracy: 0.4683
+  f1_score: 0.3884
+  roc_auc: 0.5022
+  specificity: 0.1263
+  sensitivity: 0.8592
+  balanced_accuracy: 0.4928
+  num_samples: 15271
+  num_real: 8146
+  num_ai: 7125
+
+Model: vit_v1
+  accuracy: 0.4940
+  f1_score: 0.4309
+  roc_auc: 0.5700
+  specificity: 0.1776
+  sensitivity: 0.8557
+  balanced_accuracy: 0.5167
+  num_samples: 15271
+  num_real: 8146
+  num_ai: 7125
+
+Model: deit_v1
+  accuracy: 0.4877
+  f1_score: 0.3624
+  roc_auc: 0.6748
+  specificity: 0.0660
+  sensitivity: 0.9697
+  balanced_accuracy: 0.5179
+  num_samples: 15271
+  num_real: 8146
+  num_ai: 7125
+
+Model: convnext_v1
+  accuracy: 0.4944
+  f1_score: 0.4083
+  roc_auc: 0.6442
+  specificity: 0.1317
+  sensitivity: 0.9091
+  balanced_accuracy: 0.5204
+  num_samples: 15271
+  num_real: 8146
+  num_ai: 7125
+
