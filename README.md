@@ -24,6 +24,7 @@ Ovaj projekt koristi duboko učenje (Deep Learning) za detekciju slika generiran
 - **Hugging Face Hub:** Automatsko preuzimanje naučenih utega modela (weights) prilikom prvog pokretanja.
 - **Linkovi od dataseta** https://www.kaggle.com/datasets/ishu0505/ai-vs-real-84k-train-data
 https://www.kaggle.com/datasets/hiddenplant/sut-project
+https://huggingface.co/datasets/Hemg/AI-Generated-vs-Real-Images-Datasets/viewer
 
 ### 2. Frontend (React)
 - Moderan UI za upload slika i prikaz paralelnih rezultata iz oba modela.
