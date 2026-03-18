@@ -10,30 +10,79 @@ pinned: false
 
 # 🤖 [AI Image Detector](https://ai-image-detector-eight.vercel.app/)
 
-Ovaj projekt koristi duboko učenje (Deep Learning) za detekciju slika generiranih umjetnom inteligencijom. 
+Cilj projekta je razviti sustav koji može razlikovati:
+- **AI-generirane slike**
+- **Stvarne fotografije**
+
+Modeli su trenirani i evaluirani na različitim datasetovima kako bi se analizirala njihova sposobnost generalizacije na novije AI generirane slike.
+
+---
 
 ## 💻 Tehnologije
 
-### 1. Backend (FastAPI - Python)
-- **Arhitekture modela:**
-    - **EfficientNet (CNN):** Fokusira se na teksture i lokalne anomalije u pikselima.
-    - **Vision Transformer (ViT):** Fokusira se na globalne relacije i strukturu slike.
-- **Vizualizacija:**
-    - **Grad-CAM** za CNN (prikazuje gdje model "gleda").
-    - **Attention Maps** za ViT (prikazuje fokus transformera).
-- **Hugging Face Hub:** Automatsko preuzimanje naučenih utega modela (weights) prilikom prvog pokretanja.
-- **Linkovi od dataseta** https://www.kaggle.com/datasets/ishu0505/ai-vs-real-84k-train-data
-https://www.kaggle.com/datasets/hiddenplant/sut-project
-https://huggingface.co/datasets/Hemg/AI-Generated-vs-Real-Images-Datasets/viewer
-
-### 2. Frontend (React)
-- Moderan UI za upload slika i prikaz paralelnih rezultata iz oba modela.
-- Prikaz vizualizacijskih mapa direktno na sučelju.
-
-### 3. Infrastruktura (Docker & Docker Compose)
-- Omogućuje da aplikacija radi identično na svakom računalu bez ručne instalacije biblioteka.
+### 🧠 Machine Learning / AI
+- **PyTorch** – glavni framework za treniranje i izvođenje modela  
+- **Torchvision** – dataset loaderi i transformacije slika  
+- **Timm (PyTorch Image Models)** – implementacije modernih arhitektura  
+- **Scikit-learn** – evaluacijske metrike (accuracy, F1, ROC AUC…)  
+- **NumPy** – rad s podacima i matricama  
 
 ---
+
+### 🏗️ Modeli i arhitekture
+- **EfficientNet (CNN)**  
+  - fokus na teksture i lokalne uzorke  
+- **ConvNeXt (moderni CNN)**  
+  - kombinira CNN i transformer ideje  
+- **Vision Transformer (ViT)**  
+  - fokus na globalne odnose u slici  
+- **DeiT (Data-efficient Image Transformer)**  
+  - optimiziran transformer za manje datasetove  
+
+---
+
+### 🔍 Vizualizacija modela
+- **Grad-CAM**  
+  - koristi se za CNN modele  
+  - prikazuje koje dijelove slike model koristi za odluku  
+- **Attention Maps (ViT / DeiT)**  
+  - prikazuje fokus transformera  
+
+---
+
+### ⚙️ Backend
+- **FastAPI** – REST API za inferenciju modela  
+- **Uvicorn** – ASGI server  
+- **Pillow (PIL)** – obrada slika  
+- **Python-dotenv** – upravljanje environment varijablama  
+
+---
+
+### 🎨 Frontend
+- **React** – korisničko sučelje  
+- **Axios / Fetch API** – komunikacija s backendom  
+- Prikaz:
+  - rezultata klasifikacije
+  - confidence score
+  - vizualizacija modela  
+
+---
+
+### 🐳 Infrastruktura
+- **Docker** – containerizacija aplikacije  
+- **Docker Compose** – orkestracija servisa  
+- **Hugging Face Hub** – pohrana i dohvat modela  
+
+---
+
+### 📊 Datasetovi
+Korišteni datasetovi:
+- https://www.kaggle.com/datasets/ishu0505/ai-vs-real-84k-train-data  
+- https://www.kaggle.com/datasets/hiddenplant/sut-project  
+- https://huggingface.co/datasets/Hemg/AI-Generated-vs-Real-Images-Datasets/viewer  
+
+---
+
 
 ## 🚀 Pokretanje aplikacije
 
@@ -82,13 +131,3 @@ docker-compose up
 | **Frontend** | `http://localhost:3000` | Korisničko sučelje (React) |
 | **Backend** | `http://localhost:8000` | API (FastAPI) |
 | **Dokumentacija** | `http://localhost:8000/docs` | Swagger UI za testiranje API-ja |
-
-
-### Tehnički sažetak
-
-Ključnih stavki:
-- PyTorch: Glavni framework za pokretanje AI modela.
-- Uvicorn: ASGI server koji pokreće FastAPI.
-- Pillow (PIL): Za obradu i transformaciju slika prije predikcije.
-- Timm (PyTorch Image Models): Biblioteka iz koje su povučene bazne arhitekture modela.
-- DirectML (opcionalno lokalno): Korišteno tijekom treniranja za ubrzanje na Windows/AMD hardveru, dok Docker verzija koristi CPU radi maksimalne kompatibilnosti.
