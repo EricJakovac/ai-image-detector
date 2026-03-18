@@ -8,7 +8,7 @@ app_port: 7860
 pinned: false
 ---
 
-# 🤖 AI Image Detector
+# 🤖 [AI Image Detector](https://ai-image-detector-eight.vercel.app/)
 
 Ovaj projekt koristi duboko učenje (Deep Learning) za detekciju slika generiranih umjetnom inteligencijom. 
 
